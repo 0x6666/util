@@ -319,6 +319,10 @@ func Error(format string, v ...interface{}) {
 	defLoger.Output(false, 2, LevelError, format, v...)
 }
 
+func Error2(err error) {
+	defLoger.Output(false, 2, LevelError, "%v", err)
+}
+
 func StdLogger() *Logger {
 	return defLoger
 }
