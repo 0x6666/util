@@ -2,11 +2,12 @@ package log
 
 import (
 	"fmt"
-	"os"
 	"runtime"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/fatih/color"
 )
 
 type LogLever int
@@ -22,25 +23,6 @@ const (
 const TimeFormat = "2006/01/02 15:04:05"
 
 const maxBufPoolSize = 16
-
-const (
-	NONE         = "\033[m"
-	RED          = "\033[0;32;31m"
-	LIGHT_RED    = "\033[1;31m"
-	GREEN        = "\033[0;32;32m"
-	LIGHT_GREEN  = "\033[1;32m"
-	BLUE         = "\033[0;32;34m"
-	LIGHT_BLUE   = "\033[1;34m"
-	DARY_GRAY    = "\033[1;30m"
-	CYAN         = "\033[0;36m"
-	LIGHT_CYAN   = "\033[1;36m"
-	PURPLE       = "\033[0;35m"
-	LIGHT_PURPLE = "\033[1;35m"
-	BROWN        = "\033[0;33m"
-	YELLOW       = "\033[1;33m"
-	LIGHT_GRAY   = "\033[0;37m"
-	WHITE        = "\033[1;37m"
-)
 
 type Logger struct {
 	sync.Mutex
@@ -84,7 +66,7 @@ func NewDefault(handler Handler) *Logger {
 }
 
 func newStdHandler() *StreamHandler {
-	h, _ := NewStreamHandler(os.Stdout)
+	h, _ := NewStreamHandler( /*os.Stdout*/ color.Output)
 	return h
 }
 
@@ -153,23 +135,17 @@ func (l *Logger) Level() LogLever {
 	return l.level
 }
 
-func (l *Logger) Output(ln bool, callDepth int, level LogLever, format string, v ...interface{}) {
+func (l *Logger) Output(callDepth int, level LogLever, format string, v ...interface{}) {
 	if l.level&level != level {
 		return
 	}
 
 	buf := l.popBuf()
 
-	now := time.Now().Format(TimeFormat)
-	if ln {
-		buf = append(buf, "\033[1A"...)
-	}
-	buf = append(buf, now...)
+	buf = append(buf, time.Now().Format(TimeFormat)...)
 	buf = append(buf, " - "...)
 
-	buf = append(buf, l.colorStart(level)...)
-	buf = append(buf, levelName(level)...)
-	buf = append(buf, l.colorStop(level)...)
+	buf = append(buf, l.colorLevel(level)...)
 	buf = append(buf, " - "...)
 
 	/*pc*/
@@ -204,10 +180,6 @@ func (l *Logger) Output(ln bool, callDepth int, level LogLever, format string, v
 
 	buf = append(buf, s...)
 
-	if ln {
-		buf = append(buf, "\033[K"...)
-	}
-
 	if len(s) == 0 || s[len(s)-1] != '\n' {
 		buf = append(buf, '\n')
 	}
@@ -215,29 +187,16 @@ func (l *Logger) Output(ln bool, callDepth int, level LogLever, format string, v
 	l.msg <- buf
 }
 
-func (l *Logger) colorStart(level LogLever) string {
+func (l *Logger) colorLevel(level LogLever) string {
 
 	switch level {
 	case LevelDebug:
 	case LevelInfo:
-		return GREEN
+		return color.GreenString(levelName(level))
 	case LevelWarn:
-		return YELLOW
+		return color.YellowString(levelName(level))
 	case LevelError:
-		return RED
-	}
-	return ""
-}
-
-func (l *Logger) colorStop(level LogLever) string {
-	switch level {
-	case LevelDebug:
-	case LevelInfo:
-		return NONE
-	case LevelWarn:
-		return NONE
-	case LevelError:
-		return NONE
+		return color.RedString(levelName(level))
 	}
 	return ""
 }
@@ -257,19 +216,19 @@ func levelName(level LogLever) string {
 }
 
 func (l *Logger) Debug(format string, v ...interface{}) {
-	l.Output(false, 2, LevelDebug, format, v...)
+	l.Output(2, LevelDebug, format, v...)
 }
 
 func (l *Logger) Info(format string, v ...interface{}) {
-	l.Output(false, 2, LevelInfo, format, v...)
+	l.Output(2, LevelInfo, format, v...)
 }
 
 func (l *Logger) Warn(format string, v ...interface{}) {
-	l.Output(false, 2, LevelWarn, format, v...)
+	l.Output(2, LevelWarn, format, v...)
 }
 
 func (l *Logger) Error(format string, v ...interface{}) {
-	l.Output(false, 2, LevelError, format, v...)
+	l.Output(2, LevelError, format, v...)
 }
 
 func SetLevel(level LogLever) {
@@ -300,27 +259,27 @@ func SetLogFile(logFile string) {
 }
 
 func Debug(format string, v ...interface{}) {
-	defLoger.Output(false, 2, LevelDebug, format, v...)
+	defLoger.Output(2, LevelDebug, format, v...)
 }
 
 func DebugLine(format string, v ...interface{}) {
-	defLoger.Output(true, 2, LevelDebug, format, v...)
+	defLoger.Output(2, LevelDebug, format, v...)
 }
 
 func Info(format string, v ...interface{}) {
-	defLoger.Output(false, 2, LevelInfo, format, v...)
+	defLoger.Output(2, LevelInfo, format, v...)
 }
 
 func Warn(format string, v ...interface{}) {
-	defLoger.Output(false, 2, LevelWarn, format, v...)
+	defLoger.Output(2, LevelWarn, format, v...)
 }
 
 func Error(format string, v ...interface{}) {
-	defLoger.Output(false, 2, LevelError, format, v...)
+	defLoger.Output(2, LevelError, format, v...)
 }
 
 func Error2(err error) {
-	defLoger.Output(false, 2, LevelError, "%v", err)
+	defLoger.Output(2, LevelError, "%v", err)
 }
 
 func StdLogger() *Logger {
@@ -329,4 +288,8 @@ func StdLogger() *Logger {
 
 func GetLevel() LogLever {
 	return defLoger.level
+}
+
+func init() {
+	SetLevel(LevelAll)
 }
