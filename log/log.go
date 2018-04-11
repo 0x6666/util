@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 	"strconv"
 	"sync"
@@ -66,7 +67,7 @@ func NewDefault(handler Handler) *Logger {
 }
 
 func newStdHandler() *StreamHandler {
-	h, _ := NewStreamHandler( /*os.Stdout*/ color.Output)
+	h, _ := NewStreamHandler(os.Stdout /* color.Output*/)
 	return h
 }
 
@@ -191,26 +192,13 @@ func (l *Logger) colorLevel(level LogLever) string {
 
 	switch level {
 	case LevelDebug:
-	case LevelInfo:
-		return color.GreenString(levelName(level))
-	case LevelWarn:
-		return color.YellowString(levelName(level))
-	case LevelError:
-		return color.RedString(levelName(level))
-	}
-	return ""
-}
-
-func levelName(level LogLever) string {
-	switch {
-	case level&LevelDebug == LevelDebug:
 		return "DEBUG"
-	case level&LevelInfo == LevelInfo:
-		return "INFO"
-	case level&LevelWarn == LevelWarn:
-		return "WARN"
-	case level&LevelError == LevelError:
-		return "ERROR"
+	case LevelInfo:
+		return color.GreenString("INFO")
+	case LevelWarn:
+		return color.YellowString("WARN")
+	case LevelError:
+		return color.RedString("ERROR")
 	}
 	return ""
 }
@@ -291,5 +279,6 @@ func GetLevel() LogLever {
 }
 
 func init() {
+	color.NoColor = false
 	SetLevel(LevelAll)
 }

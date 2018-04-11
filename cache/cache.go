@@ -5,11 +5,13 @@ import (
 	"time"
 )
 
-var _cache Cache
+var (
+	DefaultExpiryTime = time.Duration(0)
+	_cache            Cache
+)
 
 // Length of time to cache an item.
 const (
-	DefaultExpiryTime  = time.Duration(0)
 	ForEverNeverExpiry = time.Duration(-1)
 )
 
