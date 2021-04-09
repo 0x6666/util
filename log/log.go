@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"runtime"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/mattn/go-isatty"
 )
 
 type LogLever int
@@ -190,15 +192,36 @@ func (l *Logger) Output(callDepth int, level LogLever, format string, v ...inter
 
 func (l *Logger) colorLevel(level LogLever) string {
 
+	isTerm := true
+
+	var out io.Writer = os.Stdout
+
+	if w, ok := out.(*os.File); !ok || os.Getenv("TERM") == "dumb" ||
+		(!isatty.IsTerminal(w.Fd()) && !isatty.IsCygwinTerminal(w.Fd())) {
+		isTerm = false
+	}
+
 	switch level {
 	case LevelDebug:
 		return "DEBUG"
 	case LevelInfo:
-		return color.GreenString("INFO")
+		if isTerm {
+			return color.GreenString("INFO")
+		} else {
+			return "INFO"
+		}
 	case LevelWarn:
-		return color.YellowString("WARN")
+		if isTerm {
+			return color.YellowString("WARN")
+		} else {
+			return "WARN"
+		}
 	case LevelError:
-		return color.RedString("ERROR")
+		if isTerm {
+			return color.RedString("ERROR")
+		} else {
+			return "ERROR"
+		}
 	}
 	return ""
 }
